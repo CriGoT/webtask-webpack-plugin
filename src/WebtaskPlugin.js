@@ -14,7 +14,7 @@ const request = require('sync-request');
 const semver = require('semver');
 const glob = require('glob-all');
 const WebtaskModule = require('./WebtaskModule');
-
+const helpers = require('./helpers');
 
 /**
  *
@@ -26,7 +26,7 @@ const WebtaskModule = require('./WebtaskModule');
  * @param {string} options.modulesUrl Provides a way to define your own description of the Webtask Envrionment. Your webtask must be based on the task created byt @tehsis https://github.com/tehsis/webtaskio-canirequire/blob/gh-pages/tasks/list_modules.js
  * @param {bool}   options.strictMatching Specifies that dependencies will not be bundled only if the same version is available in the webtaks environment. If false matching will be based soelly in the name of the module.
  * @param {bool}   options.dependencyMatching If set implies that instead of waiting for webpack to resolve the dependencies the replacemente will be based on the dependencies propoerty of the package.json file. In this case Semver matching will be used.
- *
+ * @param {bool}   options.throwIfUnavailable If set the plugin will throw an error if a depdendency is found with a version not available in the webtask environment
  */
 function WebtaskWebpackPlugin(options){
   options = options || {};
@@ -35,10 +35,26 @@ function WebtaskWebpackPlugin(options){
   this.webtaskEnvironment = JSON.parse(response.getBody('utf8'));
   this.strictMatching = (options.strictMatching===undefined) || options.strictMatching; 
   this.dependencyMatching = options.dependencyMatching;
+  this.throwIfUnavailable = options.throwIfUnavailable;
 }
 
 function isNative(module){
   return module.version === "native";
+}
+
+function getPackageDefinition(directory){
+  var packageDefinition;
+  do {
+   directory = path.dirname(directory);
+   var packageFile = path.join(directory,'package.json');
+   try {
+     packageDefinition = require(packageFile);
+   } catch(ex) {
+     packageDefinition = undefined;
+   }
+  } while(!packageDefinition);
+
+  return packageDefinition;
 }
 
 function buildReplacementPlugins(directory, modules) {
@@ -51,8 +67,7 @@ function buildReplacementPlugins(directory, modules) {
       if (modules[module]) {
         for(var index = 0; index< modules[module].length;index++) {
           if (semver.satisfies(modules[module][index],packageDefinition.dependencies[module])) { 
-            console.log(module,modules[module][index],packageDefinition.dependencies[module]);
-            externalDependencies[module] = module + '@' +modules[module][index];
+            externalDependencies[module] = helpers.getVerquireRequest(module,modules[module][index]);
             break;
           }
         }
@@ -60,7 +75,7 @@ function buildReplacementPlugins(directory, modules) {
     }
   });
 
-  return [new webpack.ExternalsPlugin("commonjs", externalDependencies)];
+  return [new webpack.ExternalsPlugin("commonjs2", externalDependencies)];
 }
 
 WebtaskWebpackPlugin.prototype.apply = function(compiler) {
@@ -73,7 +88,7 @@ WebtaskWebpackPlugin.prototype.apply = function(compiler) {
     .map(function name(module){return module.name})
     .concat(WT_ADDITIONAL_MODULES); // Although these are not native we don't have the version to do the actual verification.
 
-  compiler.apply(new webpack.ExternalsPlugin("commonjs",nativeModules));
+  compiler.apply(new webpack.ExternalsPlugin("commonjs2",nativeModules));
   
   var verquireModules = {};
   availableModules.forEach(function(module){
@@ -95,19 +110,7 @@ WebtaskWebpackPlugin.prototype.apply = function(compiler) {
     nmf.plugin('create-module',function(data){
       if (verquireModules[data.rawRequest]) {
         var webtaskModule = verquireModules[data.rawRequest];
-        var directory = data.resource;
-        var packageDefinition;
-
-        do {
-          directory = path.dirname(directory);
-          var packageFile = path.join(directory,'package.json');
-          try {
-            packageDefinition = require(packageFile);
-          } catch(ex) {
-            packageDefinition = undefined;
-          }
-        } while(!packageDefinition);
-
+        var packageDefinition = getPackageDefinition(data.resource);
 
         if (packageDefinition.name === data.rawRequest){
           for(var index = 0; index< webtaskModule.length;index++) {
@@ -118,6 +121,8 @@ WebtaskWebpackPlugin.prototype.apply = function(compiler) {
 
           if (!_this.strictMatching) {
             return new WebtaskModule(data.rawRequest, webtaskModule[0], [new Error('The module \'' + data.rawRequest + '\' was not bundled because there is a version available in the Webtask environment. However the version to be used will be ' + webtaskModule[0] + ' and the local version is ' + packageDefinition.version + '. Enable strictMatching in the Webtask Webpack Plugin to use your own version.')]);
+          } else if (_this.throwIfUnavailable) {
+            return new WebtaskModule(data.rawRequest, webtaskModule[0],[],[new Error('The module \'' + data.rawRequest + '\' version ' + packageDefinition.version + ' is referenced but it is not available in Webtask. Please use one of the following versions: ' + webtaskModule)]);
           }
         }
       }

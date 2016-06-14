@@ -2,7 +2,7 @@ var Webpack = require('webpack');
 var plugin = require('../../src/WebtaskPlugin')
 
 module.exports = {
-  entry: './samples/dependency-matching/index.js',
+  entry: './examples/dependency-matching/index.js',
   output: {
     path: './build',
     filename: 'bundle.dependency.js',

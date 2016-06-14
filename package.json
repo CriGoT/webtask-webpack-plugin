@@ -19,7 +19,7 @@
     "winston": "^1.0.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "examples" : "webpack --config examples/native-modules/webpack.config.js & webpack --config examples/loose-matching/webpack.config.js & webpack --config examples/strict-matching/webpack.config.js & webpack --config examples/dependency-matching/webpack.config.js  & webpack --config examples/throw-unavailable/webpack.config.js "
   },
   "keywords": [
     "webtask",
