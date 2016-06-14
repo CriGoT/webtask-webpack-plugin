@@ -2,10 +2,10 @@ var Webpack = require('webpack');
 var plugin = require('../../src/WebtaskPlugin')
 
 module.exports = {
-  entry: './test/native-modules/index.js',
+  entry: './examples/native-modules/index.js',
   output: {
     path: './build',
-    filename: 'bundle.[name].js',
+    filename: 'bundle.native.js',
   },
   plugins: [new plugin()],
   resolve: {

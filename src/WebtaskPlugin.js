@@ -25,7 +25,7 @@ const WebtaskModule = require('./WebtaskModule');
  * @param {Object} options
  * @param {string} options.modulesUrl Provides a way to define your own description of the Webtask Envrionment. Your webtask must be based on the task created byt @tehsis https://github.com/tehsis/webtaskio-canirequire/blob/gh-pages/tasks/list_modules.js
  * @param {bool}   options.strictMatching Specifies that dependencies will not be bundled only if the same version is available in the webtaks environment. If false matching will be based soelly in the name of the module.
- * @param {bool}   options.dependencyMatching If set implies that instead of waiting for webpack to resolve the dependencies the replacemente will be based on the dependencies propoerty of the package.json file. In this case Semver matchign will be used.
+ * @param {bool}   options.dependencyMatching If set implies that instead of waiting for webpack to resolve the dependencies the replacemente will be based on the dependencies propoerty of the package.json file. In this case Semver matching will be used.
  *
  */
 function WebtaskWebpackPlugin(options){
