@@ -8,11 +8,13 @@ const WT_ADDITIONAL_MODULES=[ 'auth0-api-jwt-rsa-validation',
       'sandboxjs',
       'webtask-tools'];
  
-var webpack = require('webpack');
-var path = require('path');
-var request = require('sync-request');
-var semver = require('semver');
-var WebtaskModule = require('./WebtaskModule');
+const webpack = require('webpack');
+const path = require('path');
+const request = require('sync-request');
+const semver = require('semver');
+const glob = require('glob-all');
+const WebtaskModule = require('./WebtaskModule');
+
 
 /**
  *
@@ -35,12 +37,34 @@ function WebtaskWebpackPlugin(options){
   this.dependencyMatching = options.dependencyMatching;
 }
 
+function isNative(module){
+  return module.version === "native";
+}
+
+function buildReplacementPlugins(directory, modules) {
+  var packageFiles = glob.sync(path.join(directory,'**','package.json'));
+  var packageDefinitions = packageFiles.map(function(file) { return require(file);});
+  var externalDependencies = {};
+
+  packageDefinitions.forEach(function (packageDefinition){
+    for(var module in packageDefinition.dependencies) {
+      if (modules[module]) {
+        for(var index = 0; index< modules[module].length;index++) {
+          if (semver.satisfies(modules[module][index],packageDefinition.dependencies[module])) { 
+            console.log(module,modules[module][index],packageDefinition.dependencies[module]);
+            externalDependencies[module] = module + '@' +modules[module][index];
+            break;
+          }
+        }
+      }
+    }
+  });
+
+  return [new webpack.ExternalsPlugin("commonjs", externalDependencies)];
+}
 
 WebtaskWebpackPlugin.prototype.apply = function(compiler) {
   var _this = this;
-  function isNative(module){
-    return module.version === "native";
-  }
 
   // Add the basic modules as externals. Since it is always node we use commonjs as the external representation 
   var availableModules = _this.webtaskEnvironment.modules;
@@ -52,18 +76,21 @@ WebtaskWebpackPlugin.prototype.apply = function(compiler) {
   compiler.apply(new webpack.ExternalsPlugin("commonjs",nativeModules));
   
   var verquireModules = {};
-  for(var index=0;index < availableModules.length;index++)
-  {
-    var module = availableModules[index];
-
+  availableModules.forEach(function(module){
     if (module.name && !isNative(module)) {
       if (!verquireModules[module.name]){
         verquireModules[module.name]= [];
       }
       verquireModules[module.name].push(module.version);
     }
-  }
+  });
 
+  if (_this.dependencyMatching) {
+    buildReplacementPlugins(compiler.context,verquireModules)
+      .forEach(function(plugin) {
+        compiler.apply(plugin);
+      });
+  } else {
   compiler.plugin("normal-module-factory", function(nmf) {
     nmf.plugin('create-module',function(data){
       if (verquireModules[data.rawRequest]) {
@@ -96,6 +123,7 @@ WebtaskWebpackPlugin.prototype.apply = function(compiler) {
       }
     });
   });
+  }
 }
 
 /** @module Plugin Wetbask.io Module Plugin for Webpack */

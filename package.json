@@ -7,11 +7,12 @@
     "test": "test"
   },
   "dependencies": {
-    "auth0": "^2.3.0",
+    "boom": "^1.0.0",
     "debug": "^2.2.0",
     "winston": "^1.0.0"
   },
   "devDependencies": {
+    "glob-all": "^3.0.3",
     "semver": "^5.1.0",
     "sync-request": "^3.0.1",
     "webpack": "^1.13.1",
