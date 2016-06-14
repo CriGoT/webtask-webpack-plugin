@@ -6,7 +6,11 @@
   "directories": {
     "test": "test"
   },
-  "dependencies": {},
+  "dependencies": {
+    "auth0": "^2.3.0",
+    "debug": "^2.2.0",
+    "winston": "^1.0.0"
+  },
   "devDependencies": {
     "semver": "^5.1.0",
     "sync-request": "^3.0.1",
