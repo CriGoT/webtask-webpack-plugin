@@ -107,6 +107,7 @@ WebtaskWebpackPlugin.prototype.apply = function(compiler) {
       });
   } else {
   compiler.plugin("normal-module-factory", function(nmf) {
+    var counter=0;
     nmf.plugin('create-module',function(data){
       if (verquireModules[data.rawRequest]) {
         var webtaskModule = verquireModules[data.rawRequest];
@@ -120,9 +121,9 @@ WebtaskWebpackPlugin.prototype.apply = function(compiler) {
           }
 
           if (!_this.strictMatching) {
-            return new WebtaskModule(data.rawRequest, webtaskModule[0], [new Error('The module \'' + data.rawRequest + '\' was not bundled because there is a version available in the Webtask environment. However the version to be used will be ' + webtaskModule[0] + ' and the local version is ' + packageDefinition.version + '. Enable strictMatching in the Webtask Webpack Plugin to use your own version.')]);
+            return new WebtaskModule(data.rawRequest, webtaskModule[0], [new Error('dependency module: ' + data.rawRequest + '\n  Webtask version: ' + webtaskModule[0] + '\n  Local version: ' + packageDefinition.version + '\nModule will not be bundled, enable strictMatching in the Webtask Webpack Plugin to bundle your own version of the module.')]);
           } else if (_this.throwIfUnavailable) {
-            return new WebtaskModule(data.rawRequest, webtaskModule[0],[],[new Error('The module \'' + data.rawRequest + '\' version ' + packageDefinition.version + ' is referenced but it is not available in Webtask. Please use one of the following versions: ' + webtaskModule)]);
+            return new WebtaskModule(data.rawRequest, webtaskModule[0],[],[new Error('The module \'' + data.rawRequest + '\' version ' + packageDefinition.version + ' is referenced but it is not available in Webtask.\nPlease use one of the following versions: ' + webtaskModule)]);
           }
         }
       }

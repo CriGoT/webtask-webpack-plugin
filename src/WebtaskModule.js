@@ -15,6 +15,7 @@ function WebtaskModule(request, version, warnings, errors){
   this.requestVersion = version;
   this.warnings = warnings || [];
   this.errors = errors || [];
+  this.counter=0;
 }
 
 WebtaskModule.prototype = Object.create(Module.prototype);
@@ -24,10 +25,12 @@ WebtaskModule.prototype.build = function(options, compilation, resolver, fs, cal
   this.warnings.forEach(function(warning){
     compilation.warnings.push(warning);
   });
+  this.warnings.length=0;
   this.errors.forEach(function(error){
     compilation.errors.push(error);
   });
-	callback();
+  this.errors.length=0;
+  callback();
 };
 
 module.exports = WebtaskModule;
