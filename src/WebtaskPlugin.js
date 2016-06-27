@@ -105,15 +105,15 @@ WebtaskWebpackPlugin.prototype.apply = function(compiler) {
   compiler.plugin("normal-module-factory", function(nmf) {
     var counter=0;
     nmf.plugin('create-module',function(data){
+      if (dependencyRequirements[data.rawRequest]) {
+        return new WebtaskModule(data.rawRequest,dependencyRequirements[data.rawRequest]);
+      }
+
       if (verquireModules[data.rawRequest]) {
         var webtaskModule = verquireModules[data.rawRequest];
         var packageDefinition = getPackageDefinition(data.resource);
 
         if (packageDefinition.name === data.rawRequest){
-          if (dependencyRequirements[data.rawRequest]) {
-            return new WebtaskModule(data.rawRequest,dependencyRequirements[data.rawRequest]);
-          }
-
           for(var index = 0; index< webtaskModule.length;index++) {
             if (semver.eq(webtaskModule[index],packageDefinition.version)) {               
               return new WebtaskModule(data.rawRequest, webtaskModule[index]);
